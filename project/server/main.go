@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"os"
 
+	_ "github.com/glebarez/sqlite"
 	"github.com/gin-gonic/gin"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 var DB *sql.DB
@@ -48,7 +48,7 @@ func main() {
 }
 
 func initDB() {
-	db, err := sql.Open("sqlite3", "./data/laptiming.db")
+	db, err := sql.Open("sqlite", "./data/laptiming.db")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,8 +104,8 @@ func handleAuth(c *gin.Context) {
 	var user struct {
 		ID          int
 		TelegramID string
-		Name        string
-		Role        string
+		Name       string
+		Role       string
 	}
 
 	err := DB.QueryRow(`
@@ -215,8 +215,8 @@ func handleManualLap(c *gin.Context) {
 	var req struct {
 		RaceID        int     `json:"raceId"`
 		MotorcycleID int     `json:"motorcycleId"`
-		LapNumber    int     `json:"lapNumber"`
-		Time         float64 `json:"time"`
+		LapNumber   int     `json:"lapNumber"`
+		Time        float64 `json:"time"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

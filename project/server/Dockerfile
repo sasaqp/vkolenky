@@ -2,19 +2,19 @@ FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache gcc musl-dev libc-dev linux-headers
+RUN apk add --no-cache linux-headers
 
 COPY go.mod ./
-RUN CGO_ENABLED=1 go get github.com/mattn/go-sqlite3@v1.14.18
-RUN CGO_ENABLED=1 go get github.com/gin-gonic/gin@v1.9.1
+RUN go get github.com/glebarez/sqlite@v1.10.0
+RUN go get github.com/gin-gonic/gin@v1.9.1
 
 COPY main.go ./
 
-RUN CGO_ENABLED=1 go build -o server main.go
+RUN CGO_ENABLED=0 go build -o server main.go
 
 FROM alpine:latest
 
-RUN apk add --no-cache ca-certificates musl-dev
+RUN apk add --no-cache ca-certificates
 
 WORKDIR /app
 
