@@ -141,9 +141,13 @@ func handleGetMotorcycles(c *gin.Context) {
 
 	var motorcycles []map[string]interface{}
 	for rows.Next() {
-		var m map[string]interface{}
-		rows.Scan(&m["id"], &m["user_id"], &m["brand"], &m["model"], &m["number"], &m["cubature"])
-		motorcycles = append(motorcycles, m)
+		var id, user_id, cubature int
+		var brand, model, number string
+		rows.Scan(&id, &user_id, &brand, &model, &number, &cubature)
+		motorcycles = append(motorcycles, map[string]interface{}{
+			"id": id, "user_id": user_id, "brand": brand,
+			"model": model, "number": number, "cubature": cubature,
+		})
 	}
 	c.JSON(http.StatusOK, motorcycles)
 }
