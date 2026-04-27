@@ -1,0 +1,1 @@
+ssh -i C:/3/ssh_key -o StrictHostKeyChecking=no root@150.241.95.205 "ls /root/project"

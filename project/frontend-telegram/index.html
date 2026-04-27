@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAṠAQP - Гонки</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #fff; min-height: 100vh; padding: 16px; }
+        h1 { text-align: center; color: #e94560; margin-bottom: 20px; }
+        .btn { display: block; width: 100%; padding: 14px; margin: 10px 0; background: #e94560; color: #fff; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .btn:active { opacity: 0.8; }
+        .card { background: #16213e; padding: 16px; border-radius: 8px; margin-bottom: 12px; }
+        .input { width: 100%; padding: 12px; margin: 8px 0; background: #0f3460; border: 1px solid #e94560; border-radius: 6px; color: #fff; font-size: 14px; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; }
+        .nav button { flex: 1; padding: 10px; background: #0f3460; border: none; border-radius: 6px; color: #fff; cursor: pointer; }
+        .nav button.active { background: #e94560; }
+        .lap-time { font-size: 32px; color: #e94560; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>🏁 SAṠAQP</h1>
+    
+    <nav class="nav" id="nav">
+        <button class="active" data-view="garage">Гараж</button>
+        <button data-view="races">Гонки</button>
+        <button data-view="results">Результаты</button>
+    </nav>
+
+    <div id="view-garage">
+        <div class="card">
+            <h3>Добавить мотоцикл</h3>
+            <input type="text" id="brand" class="input" placeholder="Марка">
+            <input type="text" id="model" class="input" placeholder="Модель">
+            <input type="text" id="number" class="input" placeholder="Номер">
+            <input type="number" id="cubature" class="input" placeholder="Кубатура (cc)">
+            <button class="btn" onclick="addMotorcycle()">Добавить</button>
+        </div>
+        <div id="motorcycles-list"></div>
+    </div>
+
+    <div id="view-races" style="display:none">
+        <div class="card">
+            <h3>Создать гонку</h3>
+            <input type="text" id="race-name" class="input" placeholder="Название гонки">
+            <button class="btn" onclick="createRace()">Создать</button>
+        </div>
+        <div id="races-list"></div>
+    </div>
+
+    <div id="view-results" style="display:none">
+        <div class="card">
+            <h3>Замер круга</h3>
+            <input type="number" id="lap-time" class="input" placeholder="Время (сек.)" step="0.01">
+            <select id="lap-motorcycle" class="input"></select>
+            <button class="btn" onclick="addManualLap()">Замерить</button>
+        </div>
+        <div id="laps-list"></div>
+    </div>
+
+    <script>
+        const tg = Telegram.WebApp;
+        let user = null;
+        let motorcycles = [];
+        let races = [];
+
+        tg.ready();
+
+        async function init() {
+            try {
+                const resp = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({initData: tg.initData})
+                });
+                user = await resp.json();
+                await loadMotorcycles();
+                await loadRaces();
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function loadMotorcycles() {
+            const resp = await fetch('/api/motorcycles');
+            motorcycles = await resp.json();
+            const list = document.getElementById('motorcycles-list');
+            list.innerHTML = motorcycles.map(m => `<div class="card">${m.brand} ${m.model} #${m.number} (${m.cubature}cc)</div>`).join('');
+        }
+
+        async function loadRaces() {
+            const resp = await fetch('/api/races');
+            races = await resp.json();
+            document.getElementById('races-list').innerHTML = races.length ? races.map(r => `<div class="card">${r.name}</div>`).join('') : '<div class="card">Нет гонок</div>';
+        }
+
+        async function addMotorcycle() {
+            await fetch('/api/motorcycles', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    brand: document.getElementById('brand').value,
+                    model: document.getElementById('model').value,
+                    number: document.getElementById('number').value,
+                    cubature: parseInt(document.getElementById('cubature').value)
+                })
+            });
+            loadMotorcycles();
+        }
+
+        async function createRace() {
+            await fetch('/api/races', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: document.getElementById('race-name').value})
+            });
+            loadRaces();
+        }
+
+        async function addManualLap() {
+            const motoId = document.getElementById('lap-motorcycle').value;
+            await fetch('/api/laps/manual', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    raceId: 1,
+                    motorcycleId: parseInt(motoId),
+                    lapNumber: 1,
+                    time: parseFloat(document.getElementById('lap-time').value)
+                })
+            });
+        }
+
+        document.querySelectorAll('.nav button').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.querySelectorAll('[id^=view-]').forEach(v => v.style.display = 'none');
+                document.getElementById('view-' + btn.dataset.view).style.display = 'block';
+            };
+        });
+
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAṠAQP - Мобильная версия</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #fff; min-height: 100vh; }
+        .header { background: #e94560; padding: 16px; text-align: center; font-size: 20px; font-weight: bold; }
+        .container { padding: 16px; }
+        .btn { display: block; width: 100%; padding: 14px; margin: 10px 0; background: #e94560; color: #fff; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .btn:active { opacity: 0.8; }
+        .card { background: #16213e; padding: 16px; border-radius: 8px; margin-bottom: 12px; }
+        .input { width: 100%; padding: 12px; margin: 8px 0; background: #0f3460; border: 1px solid #e94560; border-radius: 6px; color: #fff; font-size: 14px; }
+        .nav { display: flex; background: #16213e; position: fixed; bottom: 0; left: 0; right: 0; }
+        .nav button { flex: 1; padding: 16px; background: none; border: none; color: #fff; font-size: 14px; cursor: pointer; }
+        .nav button.active { background: #e94560; }
+        .view { display: none; padding-bottom: 60px; }
+        .view.active { display: block; }
+        .lap-time { font-size: 48px; color: #e94560; text-align: center; padding: 40px 0; }
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .stat-box { background: #0f3460; padding: 16px; border-radius: 8px; text-align: center; }
+        .stat-value { font-size: 24px; color: #e94560; }
+        .stat-label { font-size: 12px; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="header">🏁 SAṠAQP</div>
+    
+    <div class="container">
+        <div id="view-garage" class="view active">
+            <div class="card">
+                <h3>🚗 Мой гараж</h3>
+                <input type="text" id="brand" class="input" placeholder="Марка">
+                <input type="text" id="model" class="input" placeholder="Модель">
+                <input type="text" id="number" class="input" placeholder="Номер">
+                <input type="number" id="cubature" class="input" placeholder="Кубатура (cc)">
+                <button class="btn" onclick="addMotorcycle()">Добавить мотоцикл</button>
+            </div>
+            <div id="motorcycles-list"></div>
+        </div>
+
+        <div id="view-races" class="view">
+            <div class="card">
+                <h3>🏁 Гонки</h3>
+                <input type="text" id="race-name" class="input" placeholder="Название гонки">
+                <button class="btn" onclick="createRace()">Создать гонку</button>
+            </div>
+            <div id="races-list"></div>
+        </div>
+
+        <div id="view-results" class="view">
+            <div class="lap-time" id="display-time">00.00</div>
+            <div class="card">
+                <h3>⏱️ Замер круга</h3>
+                <select id="lap-motorcycle" class="input"></select>
+                <button class="btn" onclick="startTimer()">Старт</button>
+                <button class="btn" onclick="stopTimer()">Стоп</button>
+            </div>
+            <div id="laps-list"></div>
+        </div>
+
+        <div id="view-profile" class="view">
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="stat-value" id="total-motos">0</div>
+                    <div class="stat-label">Мотоциклов</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="total-laps">0</div>
+                    <div class="stat-label">Замеров</div>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 16px;">
+                <h3>👤 Профиль</h3>
+                <p id="user-name">Гость</p>
+            </div>
+        </div>
+    </div>
+
+    <nav class="nav">
+        <button class="active" data-view="garage">Гараж</button>
+        <button data-view="races">Гонки</button>
+        <button data-view="results">Замер</button>
+        <button data-view="profile">Профиль</button>
+    </nav>
+
+    <script>
+        const API = '/api';
+        let motorcycles = [];
+        let races = [];
+        let timerStart = null;
+        let timerInterval = null;
+
+        async function init() {
+            if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+                const tg = Telegram.WebApp;
+                await fetch(API + '/auth', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({initData: tg.initData})
+                });
+            }
+            await loadMotorcycles();
+            await loadRaces();
+        }
+
+        async function loadMotorcycles() {
+            const resp = await fetch(API + '/motorcycles');
+            motorcycles = await resp.json();
+            document.getElementById('motorcycles-list').innerHTML = motorcycles.length 
+                ? motorcycles.map(m => `<div class="card">${m.brand} ${m.model} #${m.number} (${m.cubature}cc)</div>`).join('')
+                : '<div class="card">Добавьте мотоцикл в гараже</div>';
+            document.getElementById('total-motos').textContent = motorcycles.length;
+            
+            const select = document.getElementById('lap-motorcycle');
+            select.innerHTML = motorcycles.map(m => `<option value="${m.id}">${m.brand} ${m.model} #${m.number}</option>`).join('');
+        }
+
+        async function loadRaces() {
+            const resp = await fetch(API + '/races');
+            races = await resp.json();
+            document.getElementById('races-list').innerHTML = races.length
+                ? races.map(r => `<div class="card">${r.name}</div>`).join('')
+                : '<div class="card">Нет активных гонок</div>';
+        }
+
+        async function addMotorcycle() {
+            await fetch(API + '/motorcycles', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    brand: document.getElementById('brand').value,
+                    model: document.getElementById('model').value,
+                    number: document.getElementById('number').value,
+                    cubature: parseInt(document.getElementById('cubature').value)
+                })
+            });
+            loadMotorcycles();
+        }
+
+        async function createRace() {
+            await fetch(API + '/races', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: document.getElementById('race-name').value})
+            });
+            loadRaces();
+        }
+
+        function startTimer() {
+            timerStart = Date.now();
+            timerInterval = setInterval(() => {
+                const diff = (Date.now() - timerStart) / 1000;
+                document.getElementById('display-time').textContent = diff.toFixed(2);
+            }, 10);
+        }
+
+        async function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                const time = (Date.now() - timerStart) / 1000;
+                document.getElementById('display-time').textContent = time.toFixed(2);
+                
+                const motoId = document.getElementById('lap-motorcycle').value;
+                await fetch(API + '/laps/manual', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        raceId: 1,
+                        motorcycleId: parseInt(motoId),
+                        lapNumber: 1,
+                        time: time
+                    })
+                });
+            }
+        }
+
+        document.querySelectorAll('.nav button').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('view-' + btn.dataset.view).classList.add('active');
+            };
+        });
+
+        init();
+    </script>
+</body>
+</html>
