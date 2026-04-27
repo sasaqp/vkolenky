@@ -1,0 +1,12 @@
+Host vps
+    HostName 150.241.95.205
+    User root
+    IdentityFile C:/3/ssh_key
+    StrictHostKeyChecking no
+    ServerAliveInterval 10
+    ServerAliveCountMax 3
+    TCPKeepAlive yes
+    ConnectTimeout 30
+    ControlPath ~/.ssh/sock-%r@%h-%p
+    ControlMaster auto
+    ControlPersist 600

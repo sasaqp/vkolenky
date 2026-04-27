@@ -1,0 +1,1 @@
+ssh -i C:/3/ssh_key -o ServerAliveInterval=5 -o StrictHostKeyChecking=no -o ControlPath=~/.ssh/control -o ControlMaster=auto root@150.241.95.205
