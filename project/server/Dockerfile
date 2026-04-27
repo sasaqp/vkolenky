@@ -5,7 +5,8 @@ WORKDIR /app
 RUN apk add --no-cache gcc musl-dev libc-dev
 
 COPY go.mod ./
-RUN go mod download github.com/mattn/go-sqlite3
+RUN go get github.com/mattn/go-sqlite3
+RUN go get github.com/gin-gonic/gin
 
 COPY main.go ./
 
