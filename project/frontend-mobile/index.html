@@ -94,16 +94,18 @@
         let timerInterval = null;
 
         async function init() {
-            if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-                const tg = Telegram.WebApp;
-                await fetch(API + '/auth', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({initData: tg.initData})
-                });
-            }
-            await loadMotorcycles();
-            await loadRaces();
+            try {
+                const tg = typeof Telegram !== 'undefined' && Telegram.WebApp;
+                if (tg) {
+                    await fetch(API + '/auth', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({initData: Telegram.WebApp.initData})
+                    });
+                }
+                await loadMotorcycles();
+                await loadRaces();
+            } catch(e) { console.error(e); }
         }
 
         async function loadMotorcycles() {

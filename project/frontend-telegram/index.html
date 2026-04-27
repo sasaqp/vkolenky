@@ -61,7 +61,6 @@
 
     <script>
         const tg = Telegram.WebApp;
-        let user = null;
         let motorcycles = [];
         let races = [];
 
@@ -69,30 +68,28 @@
 
         async function init() {
             try {
-                const resp = await fetch('/api/auth', {
+                await fetch('/api/auth', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({initData: tg.initData})
                 });
-                user = await resp.json();
                 await loadMotorcycles();
                 await loadRaces();
-            } catch(e) {
-                console.error(e);
-            }
+            } catch(e) { console.error(e); }
         }
 
         async function loadMotorcycles() {
             const resp = await fetch('/api/motorcycles');
             motorcycles = await resp.json();
-            const list = document.getElementById('motorcycles-list');
-            list.innerHTML = motorcycles.map(m => `<div class="card">${m.brand} ${m.model} #${m.number} (${m.cubature}cc)</div>`).join('');
+            document.getElementById('motorcycles-list').innerHTML = motorcycles.map(m => 
+                `<div class="card">${m.brand} ${m.model} #${m.number} (${m.cubature}cc)</div>`).join('');
         }
 
         async function loadRaces() {
             const resp = await fetch('/api/races');
             races = await resp.json();
-            document.getElementById('races-list').innerHTML = races.length ? races.map(r => `<div class="card">${r.name}</div>`).join('') : '<div class="card">Нет гонок</div>';
+            document.getElementById('races-list').innerHTML = races.length ? 
+                races.map(r => `<div class="card">${r.name}</div>`).join('') : '<div class="card">Нет гонок</div>';
         }
 
         async function addMotorcycle() {
