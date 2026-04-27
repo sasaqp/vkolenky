@@ -2,11 +2,11 @@ FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache gcc musl-dev libc-dev
+RUN apk add --no-cache gcc musl-dev libc-dev linux-headers
 
 COPY go.mod ./
-RUN go get github.com/mattn/go-sqlite3@v1.14.18
-RUN go get github.com/gin-gonic/gin@v1.9.1
+RUN CGO_ENABLED=1 go get github.com/mattn/go-sqlite3@v1.14.18
+RUN CGO_ENABLED=1 go get github.com/gin-gonic/gin@v1.9.1
 
 COPY main.go ./
 
